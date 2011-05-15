@@ -1,0 +1,1 @@
+cmd_/home/steven/devel/emailfs/kernel/src/emailfs-driver.ko := ld -m elf_i386 -r -o /home/steven/devel/emailfs/kernel/src/emailfs-driver.ko /home/steven/devel/emailfs/kernel/src/emailfs-driver.o /home/steven/devel/emailfs/kernel/src/emailfs-driver.mod.o

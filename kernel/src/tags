@@ -1,0 +1,29 @@
+DEBG	emailfsd.c	/^#define DEBG(str) printk("EMFS: %s\\n",str);$/
+DEBGOK	emailfsd.c	/^#define DEBGOK(str) printk("EMFS: %s: OK\\n",str);$/
+DEBUG	emailfs-driver.c	/^#define DEBUG(x...) 	printk("EMFS>" \/*KERN_DEBUG _/
+VERBOSE	emailfs-driver.c	/^#define VERBOSE(x...) 	printk("EMFS>"\/* KERN_NOTIC/
+check_dcache_valid	daemon_sock.c	/^int check_dcache_valid(struct sock* nl_sk){$/
+daemon_command	daemon_sock.c	/^int daemon_command(struct sock* nl_sk,char *cmd,vo/
+daemon_connect	emailfsd.c	/^void daemon_connect(){$/
+daemon_diconnect	emailfsd.c	/^void daemon_diconnect(){$/
+daemon_get_next_dentry	daemon_sock.c	/^int daemon_get_next_dentry(struct sock* nl_sk, cha/
+daemon_ilookup	daemon_sock.c	/^int daemon_ilookup(char * dname,struct sock* nl_sk/
+daemon_readpage	daemon_sock.c	/^int daemon_readpage(struct file *file, struct page/
+daemon_recv	emailfsd.c	/^int daemon_recv(char *buf,int n)$/
+daemon_send	emailfsd.c	/^int daemon_send(char *buff,int flag)$/
+emailfs_commit_write	emailfs-driver.c	/^static int emailfs_commit_write(struct file *file,/
+emailfs_exit_module	emailfs-driver.c	/^static void emailfs_exit_module(void)$/
+emailfs_file_open	emailfs-driver.c	/^static int emailfs_file_open(struct inode *inode, /
+emailfs_file_readdir	emailfs-driver.c	/^static int emailfs_file_readdir(struct file *file,/
+emailfs_file_release	emailfs-driver.c	/^static int emailfs_file_release (struct inode *ino/
+emailfs_fill_sb	emailfs-driver.c	/^int emailfs_fill_sb(struct super_block *sb, void */
+emailfs_get_sb	emailfs-driver.c	/^static struct super_block * emailfs_get_sb(struct /
+emailfs_init_module	emailfs-driver.c	/^static int emailfs_init_module(void)$/
+emailfs_inode_lookup	emailfs-driver.c	/^static struct dentry * emailfs_inode_lookup(struct/
+emailfs_kill_sb	emailfs-driver.c	/^static void emailfs_kill_sb(struct super_block *su/
+emailfs_prepare_write	emailfs-driver.c	/^static int emailfs_prepare_write(struct file *file/
+emailfs_readpage	emailfs-driver.c	/^static int emailfs_readpage(struct file *file, str/
+emailfs_super_read_inode	emailfs-driver.c	/^void emailfs_super_read_inode(struct inode *inode)/
+emailfs_super_write_inode	emailfs-driver.c	/^static int emailfs_super_write_inode(struct inode /
+emailfs_writepage	emailfs-driver.c	/^static int emailfs_writepage(struct page *page, st/
+nl_data_ready	daemon_sock.c	/^void nl_data_ready (struct sock *sk, int len)$/

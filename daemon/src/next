@@ -1,0 +1,160 @@
+/* this is part of the libspopc library sources
+ * copyright  2002 Benoit Rouits <brouits@free.fr>
+ * released under the terms of GNU LGPL
+ * (GNU Lesser General Public Licence).
+ * libspopc offers simple API for a pop3 client (MTA).
+ * See RFC 1725 for pop3 specifications.
+ * more information on http://brouits.free.fr/libspopc/
+ */
+
+/* Using objects-level methods of libspopc is very
+ * EASY but doesn't allow you to do everything you
+ * want. It just makes the useful tasks
+ */
+#define DEBG(str) printf("%s\n",str);
+#include <string.h> /* use of strcpy() */
+#include <ctype.h> /* use of toupper() */
+#include <stdio.h> /* use of printf() */
+#include <stdlib.h> /* use of exit() */
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
+
+#include "../libspopc.h"
+#include "kern_sock.h"
+/*
+ * Butcher's hook for a look
+ */
+#define STRING 2048
+
+char* err=NULL;
+char* subject=NULL;
+char* from=NULL;
+int i=0, answer=9999999;
+popsession* mysession;
+char command[4];
+// char* strstrup(const char* string, const char* word)
+// {
+// 	char upstring[STRING];
+// 	char upword[STRING];
+// 	int i;
+// 	char* match;
+// 
+// 	strncpy(upstring, string, STRING);
+// 	strncpy(upword, word, STRING);
+// 
+// 	for (i=0; upstring[i]!='\0'; i++) {
+// 		upstring[i]=toupper(upstring[i]);
+// 	}
+// 	for (i=0; upword[i]!='\0'; i++) {
+// 		upword[i]=toupper(upword[i]);
+// 	}
+// 
+// 	match=strstr(upstring, upword);
+// 	if (match!=NULL) {
+// 		i=match-upstring;
+// 		return((char*)((int)string+i));
+// 	} else {
+// 		return(NULL);
+// 	}
+// }
+// 
+// char* getlinewhere(const char* header, const char* word)
+// {
+// 	char *begin, *end, *line;
+// 
+// 	begin=strstrup(header, word);
+// 	if(begin==NULL) {
+// 		return(NULL);
+// 	}
+// 	end=strstr(begin, "\r");
+// 	line=(char*)malloc(((end-begin)*sizeof(char))+1);
+// 	strncpy(line,begin,(end-begin));
+// 	line[end-begin]='\0';
+// 	return line;
+// }
+// 
+// 
+// void freeline(char* line)
+// {
+// 	free(line);
+// }
+// 
+// 
+// void list()
+// {
+// 	char buff[1024];
+// 	int t,stat;
+// 	
+// 	char* pop3_stat(int sock);
+// 	if(popnum(mysession) > 0) {
+// 		/* listing */
+// 		for(i=1;i<=popnum(mysession);i++) {
+// 			err=popgethead(mysession,i);
+// 			from=getlinewhere(err, "From:");
+// 			subject=getlinewhere(err, "Subject:");
+// 			strcpy(buff,from);
+// 			strcat(buff,"-");
+// 			strcat(buff,subject);
+// 			strcat(buff,"\n");
+// 			t+=strlen(buff);
+// 			printf("Size=%d",t);
+// 			kernsend(buff);
+// 			/*if(sizeof(buff)>=1024) {
+// 				kernsend(buff);
+// 				
+// 			} else {
+// 				kernsend(buff);
+// 				
+// 			}*/
+// 
+// 
+// 			//still buggy...big time
+// 			//or maybe it's a little better
+// 			freeline(from);from=NULL;
+// 			freeline(subject);subject=NULL;
+// 			free(err);err=NULL;
+// 		}
+// 
+// 	}
+// 
+// }
+
+
+
+int main(int argc,char** argv)
+{
+
+	char myservername[64];
+	char username[64];
+
+	char *option;
+
+
+	strcpy(myservername,"pop.bluebottle.com");
+	strcpy(username,"emailfs@bluebottle.com");
+	strcpy(password,"daemon");
+	/*printf("ok\n");
+	printf("Connect: %s\n",pop_connect(myservername,username,password));
+	DEBG("ok2")
+	printf("Stat: %d\n",pop_stat());
+	printf("Disconnect: %s\n",pop_disconnect());
+	*/
+	//err=popbegin(myservername,username,password,&mysession);
+	if(err) {
+		printf("%s",err);
+		free(err);
+		exit(1);
+	}
+	kern_conn();
+	//kern_send("hello kernel\n");
+	debug(kern_recv(0));
+	kern_send("from Daemon 2\n");
+	kern_closeconn();
+	//popend(mysession);
+	exit(0);
+}
+
+
+

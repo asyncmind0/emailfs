@@ -1,0 +1,10 @@
+
+killall -9 daemon
+sync
+rm -rf daemonlog
+echo -e "Starting log\n">> daemonlog
+daemon/src/daemon&
+insmod emailfs-driver.ko
+mount -t emailfs emailfs /mnt/psion
+ls /mnt/psion
+cd /mnt/psion

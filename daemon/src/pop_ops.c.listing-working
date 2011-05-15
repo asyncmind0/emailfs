@@ -1,0 +1,179 @@
+/***************************************************************************
+ *   Copyright (C) 2005 by Steven Joseph   *
+ *   stevenjose@gmail.com   *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+#define DEBG(str) printf("%s\n",str);
+#include <string.h> 
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
+
+#include <ctype.h> /* use of toupper() */
+
+
+
+#include "pop_ops.h"
+#define STRING 2048
+
+
+
+
+char* strstrup(const char* string, const char* word){
+	char upstring[STRING];
+	char upword[STRING];
+	int i;
+	char* match;
+	
+	strncpy(upstring, string, STRING);
+	strncpy(upword, word, STRING);
+
+	for (i=0; upstring[i]!='\0'; i++){
+		upstring[i]=toupper(upstring[i]);
+	}
+	for (i=0; upword[i]!='\0'; i++){
+		upword[i]=toupper(upword[i]);
+	}
+
+	match=strstr(upstring, upword);
+	if (match!=NULL){
+		i=match-upstring;
+		return((char*)((int)string+i));
+	}else{
+		return(NULL);
+	}
+}
+
+char* getlinewhere(const char* header, const char* word){
+	char *begin, *end, *line;
+	printf("OK1 GL\n");
+	begin=strstrup(header, word);
+	begin=strchr(begin,':');
+	begin=begin+sizeof(char);
+	if(begin==NULL){
+		return(NULL);
+	}
+	end=strstr(begin, "\r");
+
+	line=(char*)malloc(((end-begin)*sizeof(char))+1);
+	strncpy(line,begin,(end-begin));
+	line[end-begin]='\0';
+	//line=strchr(line,':');
+	//line=line+sizeof(char);
+	printf("OK2 GL\n");
+	return line;
+}
+void freeline(char* line){
+	free(line);
+}
+
+
+/*int pop_setup(char *myservername,char *username,char *password)
+{
+
+
+
+
+	char* err=NULL;
+	int i=0, answer=9999999;
+
+
+	err=popbegin(myservername,username,password,&mysession);
+	if(err) {
+		printf("%s",err);
+		free(err);
+		return -1;
+	}
+}
+*/
+int get_next_entry(char *buff)
+{
+	printf("okay!1\n");
+	/*char tmpbuff[2040];
+	char* err=NULL;
+	static int dent_num=0;
+	char* subject=NULL;
+	char* from=NULL;
+	if(popnum(mysession)<=dent_num) {
+		strcpy(buff,"\n");
+		dent_num=0;
+		return -1;
+	} else {
+		
+		dent_num++;
+	}
+	*/
+}
+
+
+int get_list()
+{
+	printf("okay!1\n");
+	char tbuff[2048];
+	
+	char myservername[64];
+	char username[64];
+	char password[64];
+ 
+	popsession* mysession;
+	char* erro=NULL;
+	char* subject=NULL;
+	char* from=NULL;
+	int i=0, answer=9999999; 
+	strcpy(myservername,"nmma.sancharnet.in");
+	strcpy(username,"josephjoy");
+	strcpy(password,"ann1990");
+	//err=popbegin("nmma.sancharnet.in","josephjoy","ann1990",&mysession);
+	
+	erro=popbegin(myservername,username,password,&mysession);
+	
+	if(erro){
+		printf("%s",erro);
+		free(erro);
+		exit(1);
+	}
+	printf("Got %d messahhges\n",popnum(mysession));
+	
+	if(popnum(mysession) > 0){
+		printf("Holds %d bytes of data.\n",popbytes(mysession));
+		/* listing */
+		for(i=1;i<=popnum(mysession);i++){
+			
+			erro=popgethead(mysession,i);
+			//from=strchr(erro,":");
+			from=getlinewhere(erro, "From:");
+			subject=getlinewhere(erro, "Subject:");
+			strcpy(tbuff,popmsguid(mysession,i));
+			strcat(tbuff,from);
+			strcat(tbuff,subject);
+			printf("name: %s\n",tbuff);
+			freeline(from); from=NULL;
+			freeline(subject);subject=NULL;
+			free(erro);erro=NULL;
+		}
+		
+		
+	}
+	popend(mysession);			
+	exit(0);		
+}
+		
+
+

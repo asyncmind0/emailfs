@@ -1,0 +1,4 @@
+umount /mnt/psion
+sync
+rmmod emailfs-driver
+

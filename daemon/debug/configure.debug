@@ -1,0 +1,2 @@
+LDFLAGS="-L /root/emailfs-project/emailfs/daemon/libspopc.a " CFLAGS="-O0 -g3 " "/root/Projects/emailfs/daemon/configure" --enable-debug=full 
+

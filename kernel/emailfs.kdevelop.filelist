@@ -1,0 +1,6 @@
+# KDevelop Custom Project File List
+emailfs-driver.c
+Makefile
+emailfs-driver.h
+sock.c
+sock.h

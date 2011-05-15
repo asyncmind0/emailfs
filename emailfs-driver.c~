@@ -1,0 +1,314 @@
+
+#include <linux/init.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/version.h>
+#include <linux/fs.h>
+#include <linux/sched.h>
+#include <linux/statfs.h>
+#include <linux/mm.h>
+#include <asm/uaccess.h>
+#include <asm/errno.h>
+#include <linux/buffer_head.h>
+#include <linux/pagemap.h>
+#include "emailfs-driver.h"
+#include <net/sock.h>
+#include <linux/netlink.h>
+#include "sock.h"
+#include "emailfs.h"
+#define SERVER "/tmp/server"
+#define DEBUG 1
+#ifdef DEBUG
+#define DEBGOK(str) printk("EMFS: %s: OK\n",str)
+#define DEBG(str) printk("EMFS: %s\n",str)
+//#else
+//#define DEBGOK  ;
+//#define DEBG	;
+#endif
+MODULE_DESCRIPTION("emailfs kernel module");
+MODULE_AUTHOR("Steven Joseph (stevenjose@gmail.com)");
+MODULE_LICENSE("$LICENSE$");
+static struct file_system_type emailfs_type=			//registers the file system with the system
+{
+	.name           = "emailfs",
+	.get_sb         = emailfs_get_sb,	
+	.kill_sb        = emailfs_kill_sb	
+};
+
+struct super_operations emailfs_sops=			//super block operations - 	
+{
+	.read_inode=emailfs_super_read_inode,	
+	.write_inode=emailfs_super_write_inode,	
+	// .delete_inode=emailfs_super_delete_inode,
+	//.put_super=emailfs_super_put_super,		
+	.statfs=simple_statfs//emailfs_super_statfs	
+};
+
+static struct inode_operations emailfs_iops =		// inode operations struct
+{
+	.lookup=emailfs_inode_lookup
+};
+
+static struct file_operations emailfs_fops =		//file operations struct
+{
+	.open		= emailfs_file_open,
+	.read		= &generic_file_read,
+	.readdir	= &emailfs_file_readdir,
+	.write		= &generic_file_write,
+	.release	= &emailfs_file_release,
+	.fsync		= simple_sync_file
+};
+
+static struct address_space_operations emailfs_aops =	// adress space operations
+{
+	.readpage = emailfs_readpage,
+	.writepage = emailfs_writepage,
+	.prepare_write = emailfs_prepare_write,
+	.commit_write = emailfs_commit_write
+};
+
+
+static char file_buf[PAGE_SIZE] = "Hello World\n";
+static int file_size = 12;
+int inoc;
+
+static struct super_block * emailfs_get_sb(struct file_system_type *fs_type, int flags, const char *devname, void *data)
+{	//printk("daemon_connect");
+	//daemon_connect();
+	//return get_sb_nodev(fs_type, flags, data, emailfs_fill_sb);
+	DEBGOK("emailfs_get_sb");
+	return get_sb_single(
+	           fs_type,
+	           flags,
+	           data,
+	           &emailfs_fill_sb);
+}
+
+
+int emailfs_fill_sb(struct super_block *sb, void *data, int silent)
+{
+	//static int;
+	sb->s_blocksize = 1024;
+	sb->s_blocksize_bits = 10;
+	sb->s_magic = EMFS_MAGIC;
+	sb->s_op = &emailfs_sops; 			// super block operations
+	sb->s_type = &emailfs_type; 			// file_system_type
+
+	emailfs_root_inode = iget(sb, 1); 		// allocate an inode
+	emailfs_root_inode->i_op = &emailfs_iops;	// set the inode ops
+	emailfs_root_inode->i_mode = S_IFDIR|S_IRWXU;
+	emailfs_root_inode->i_fop = &emailfs_fops;
+
+	if(!(sb->s_root = d_alloc_root(emailfs_root_inode)))
+	{
+		iput(emailfs_root_inode);
+		return -ENOMEM;
+	}
+
+	return 0;
+
+}
+
+static void emailfs_kill_sb(struct super_block *super)
+{
+	kill_anon_super(super);
+}
+
+void emailfs_super_read_inode(struct inode *inode)		//here inodes are read from deamon
+{
+	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
+	inode->i_mapping->a_ops = &emailfs_aops;
+}
+
+static int emailfs_super_write_inode(struct inode *inode, int wait)
+{
+	printk("emailfs_super_write_inode (i_ino = %d) = %d\n",(int)inode->i_ino,(int)i_size_read(inode));
+	if(inode->i_ino == FILE_INODE_NUMBER||inode->i_ino == 3)
+	{
+		file_size = i_size_read(inode);
+	}
+	return 0;
+}
+
+
+/**
+ * this function creates inodes , listing files look here
+ * @param parent_inode 
+ * @param dentry 
+ * @param nameidata 
+ * @return 
+ */
+static struct dentry * emailfs_inode_lookup(struct inode *parent_inode, struct dentry *dentry, struct nameidata *nameidata)
+{
+	
+	
+	struct inode *file_inode;
+	if(parent_inode->i_ino != emailfs_root_inode->i_ino )
+	{
+		printk("nulled = %s\n",dentry->d_name.name);
+		d_add(dentry, NULL);
+		goto out;
+	}
+	printk("allocated =%s\n",dentry->d_name.name); 			//allocating inode
+	//if(!strncmp(dentry->d_name.name, "hello.txt", dentry->d_name.len))
+	file_inode = iget(parent_inode->i_sb, FILE_INODE_NUMBER);
+	/*if(!strncmp(dentry->d_name.name, "hello2.xt", dentry->d_name.len))
+	file_inode = iget(parent_inode->i_sb, 3);*/			
+	if(!file_inode)
+		return ERR_PTR(-EACCES);
+	file_inode->i_size = file_size;
+	file_inode->i_mode = S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH;
+	file_inode->i_fop = &emailfs_fops;
+	//  file_inode->i_fop
+	d_add(dentry, file_inode);
+	
+	
+	
+
+out:
+	return NULL;
+}
+
+/*file operations */
+
+static int emailfs_file_open(struct inode *inode, struct file *file)
+{
+	static char buff[1024];
+	printk("max_readahead (file-open) = %d (size = %d)\n", (int)file->f_ra.ra_pages, file_size);
+	file->f_ra.ra_pages = 0; /* No read-ahead */
+	daemon_connect();
+	DEBG("daemon_connect");
+	//daemon_recv(buff);
+	//DEBG("daemon_recv");
+	daemon_send("hello daemon",12);
+	DEBG("daemon_send");
+	daemon_diconnect();
+	DEBG("daemon_diconnect");
+	return generic_file_open(inode, file);
+}
+
+static int emailfs_file_release (struct inode *ino, struct file *file)
+{
+	struct dentry *dentry;
+	dentry = file->f_dentry;
+	return 0;
+}
+
+static int emailfs_file_readdir(struct file *file, void *dirent, filldir_t filldir)
+{
+	struct dentry *de = file->f_dentry;
+	if(file->f_pos > 2)
+		return 1;
+	if(filldir(dirent, ".", 1, file->f_pos++, de->d_inode->i_ino, DT_DIR))
+		return 0;
+	if(filldir(dirent, "..", 2, file->f_pos++, de->d_parent->d_inode->i_ino, DT_DIR))
+		return 0;
+	if(filldir(dirent, "hello.txt", 9, file->f_pos++, FILE_INODE_NUMBER, DT_REG))
+		return 0;
+	if(filldir(dirent, "hello2.xt", 9, file->f_pos++, 3, DT_REG))
+		return 0;
+	DEBG("emailfs_file_readdir");
+	return 1;
+}
+
+/* address_space_operations */
+static int emailfs_writepage(struct page *page, struct writeback_control *wbc)
+{
+	printk("[EMAILFS] offset = %d\n", (int)page->index);
+	printk("emailFS: WritePage: [%s] [%s] [%s] [%s]\n",
+	       PageUptodate(page) ? "Uptodate" : "Not Uptodate",
+	       PageDirty(page) ? "Dirty" : "Not Dirty",
+	       PageWriteback(page) ? "PageWriteback Set" : "PageWriteback Cleared",
+	       PageLocked(page) ? "Locked" : "Unlocked");
+	memcpy(file_buf, page_address(page), PAGE_SIZE);
+	ClearPageDirty(page);
+	if(PageLocked(page))
+		unlock_page(page);
+	return 0;
+}
+
+
+
+
+
+
+
+static int emailfs_readpage(struct file *file, struct page *page)
+{	
+	printk("filename = %s",file->f_dentry->d_name.name);
+	
+	//dont messs around below
+	printk("EMFS: readpage called for page index=[%d]\n", (int)page->index);
+	if(page->index > 0)
+	{
+		return -ENOSPC;
+	}
+
+	printk("EMFS: Page: [%s] [%s] [%s] [%s]\n",
+	       PageUptodate(page) ? "Uptodate" : "Not Uptodate",
+	       PageDirty(page) ? "Dirty" : "Not Dirty",
+	       PageWriteback(page) ? "PageWriteback Set" : "PageWriteback Cleared",
+	       PageLocked(page) ? "Locked" : "Unlocked");
+	SetPageUptodate(page);
+	memcpy(page_address(page), file_buf, PAGE_SIZE);
+	if(PageLocked(page))
+		unlock_page(page);
+	return 0;
+}
+
+static int emailfs_prepare_write(struct file *file, struct page *page,unsigned from, unsigned to)
+{
+	return 0;
+}
+
+/* modified from generic_commit_write. generic_commit_write calls the
+*block device layer to write set up buffer heads for I/O.
+*/
+static int emailfs_commit_write(struct file *file, struct page *page,unsigned from, unsigned to)
+{
+	struct inode *inode = page->mapping->host;
+	loff_t pos = ((loff_t)page->index << PAGE_CACHE_SHIFT) + to;
+
+	printk("EMFS: commit_write: [%s] [%s] [%s] \n",
+	       PageUptodate(page) ? "Uptodate" : "Not Uptodate",
+	       PageDirty(page) ? "Dirty" : "Not Dirty",
+	       PageLocked(page) ? "Locked" : "Unlocked");
+
+	if(page->index == 0)
+	{
+		memcpy(file_buf, page_address(page), PAGE_SIZE);
+		ClearPageDirty(page);
+	}
+
+	/*
+	* No need to use i_size_read() here, the i_size
+	* cannot change under us because we hold i_sem.
+	*/
+	if (pos > inode->i_size)
+	{
+		i_size_write(inode, pos);
+		mark_inode_dirty(inode);
+	}
+
+
+	SetPageUptodate(page);
+	return 0;
+}
+
+/*module initialization and release**/
+static int emailfs_init_module(void)
+{
+	printk( KERN_DEBUG "Module emailfs init\n" );
+	register_filesystem(&emailfs_type);
+	return 0;
+}
+
+static void emailfs_exit_module(void)
+{
+	printk( KERN_DEBUG "Module emailfs exit\n" );
+	unregister_filesystem(&emailfs_type);
+}
+
+module_init(emailfs_init_module);
+module_exit(emailfs_exit_module);
+

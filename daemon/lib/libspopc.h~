@@ -1,0 +1,232 @@
+/* this is libspopc.h file.
+ * this is part of the libspopc library sources
+ * copyright © 2002 Benoit Rouits <brouits@free.fr>
+ * released under the terms of GNU LGPL
+ * (GNU Lesser General Public Licence).
+ * libspopc offers simple API for a pop3 client (MDA).
+ * See RFC 1725 for pop3 specifications.
+ * more information on http://brouits.free.fr/libspopc/
+ */
+#ifndef LIBSPOPC_H
+#define LIBSPOPC_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <sys/types.h>
+#ifdef WIN32
+#include <winsock.h>
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#endif
+
+/***************************************
+ * low-level methods for a pop3 client *
+ ***************************************/
+#define SOCKET_TIMEOUT 15
+#define TCPBUFLEN 512
+/******************************************************************************
+ * Be careful, using the low-level API is uncompliant with using the high     *
+ * level API. Here, you make your choice. If you don't know the pop3 protocol *
+ * or what a socket is, it is then warmly recommended to use the *high-level* *
+ * API if which is shown far below on this file.                              *
+ ******************************************************************************/
+
+/**************
+ * connecting *
+ **************/
+
+int pop3_prepare(const char* servername, const int port, struct sockaddr_in* connection, struct hostent* server);
+/* prepares the pop session and returns a socket descriptor */
+
+char* pop3_connect(int sock, struct sockaddr_in* connection);
+/* connects to the server through the sock and returns server's welcome */
+
+void pop3_disconnect(int sock);
+/* close socket  */
+
+
+/****************
+ * pop3 queries *
+ ****************/
+
+char* pop3_user(int sock, const char* name);
+/* performs "USER" pop query and returns server's <512 bytes response */
+
+char* pop3_pass(int sock, const char* pw);
+/* performs "PASS" pop query and return server's <512 bytes response */
+
+char* pop3_quit(int sock);
+/* performs "QUIT" pop query and returns server's <512 bytes response */
+
+char* pop3_stat(int sock);
+/* performs "STAT" pop query and returns server's <512 bytes response */
+
+
+char* pop3_list(int sock, int id);
+/* performs a "LIST" pop query and returns server's (long) response */
+
+char* pop3_retr(int sock, int id);
+/* performs a "RETR" pop query and returns server's (long) response */
+
+char* pop3_dele(int sock, int id);
+/* performs a "DELE" pop query and returns server's <512 bytes response */
+
+char* pop3_noop(int sock);
+/* performs a "NOOP" pop query and returns server's <512 bytes response */
+
+char* pop3_rset(int sock);
+/* performs a "RSET" pop query and returns server's <512 bytes response */
+
+char* pop3_top(int sock, int id, int lines);
+/* performs a "TOP" pop query and returns server's (long) response */
+
+char* pop3_uidl(int sock, int id);
+/* performs a "UIDL" pop query and returns server's (long) response */
+
+char* pop3_apop(int sock, const char* name, const char* digest);
+/* performs a "APOP" secure pop query and returns server's <512 bytes response */
+
+/* this one is not in the API, just for libspopc internal use: */
+char* recv_rest(int sock, char* buf, int cs, int bs);
+/* recv rest of data through sock, given a cs bytes filled buffer of total size bs */
+/* end of data is assumed when data has a "\n.\n" or "\n.\0" string */
+
+/*********************
+ * parsing utilities *
+ *********************/
+#define DOTBEGIN(s) ((s)[0]=='\n'&&(s)[1]=='.')
+
+int dotline(char* buf);
+/* returns 1 if buf contains a "\n.\n" or "\n.\0" or \r.(etc) substring */
+/* buf must be erminated by '\0' */
+
+int pop3_error(char* string);
+/* returns 1 if pop server error reply (i.e : -ERR ...) */
+
+/************************************
+ * reply re-formatting, after query *
+ ************************************/
+char* nextline(char* string);
+/* returns a pointer to the next line of given string */
+
+char* retr2msg(char* data);
+/* returns formatted mail from a pop RETR X query */
+/* must only be called on data returned by pop3_retr() */
+
+void freemsg(char* msg);
+/* free the message received by reetr2msg */
+
+int* list2array(char* poplist);
+/* WARNING: must not be called after a mail deletion */
+/* returns an int array of sizes of messages from a LIST pop query */
+/* array[0] holds id of the array's last element */
+/* must only be called on data received by a pop3_list(sock,0) request */
+
+void freelistarray(int* array);
+/* free the message sizes array created by list2array */
+
+int listi2size(char* resp);
+/* grep the given size (in bytes) in resp after a pop3_list(sock,ID) request */
+/* do not use after a pop3_list(sock,0) ! */
+
+int stat2last(char* resp);
+/* returns the number of stored messages on pop server */
+
+int stat2bytes(char* resp);
+/* returns the sumsize in bytes of all stored messages on server */
+/* must only be called just after a pop3_stat() request */
+
+char** uidl2array(char* resp);
+/* WARNING: mus not be called after a mail deletion */
+/* returns an array of unique strings for each message id */
+/* array[0] gives array's last id */
+/* must only be called just after a pop3_uidl(sock,0) request */
+
+void freeuidlarray(char** arrray);
+/* free the uidl array created by uidl2array */
+
+char* uidli2sig(char* resp);
+/* grep the pop signature of *one* message signature reply*/
+/* should only be called on data received by a pop3_uidl(sock,ID) request */
+/* do not use it after a pop3_uidl(sock,0) ! */
+
+
+/***************************************************
+ * high-level API for a SIMPLE MDA/MUA             *
+ ***************************************************/
+
+/******************************************************************************
+ * This is the high-level API of libspopc and it is recommended to use it     *
+ * instead of the low-level one. This high-level API, in spite of its very    *
+ * 'teasing' name, just provides a *very simple* way to access and query a    *
+ * pop3 server with your e-mail client. This API handles pop3 in a very       *
+ * convenient manner for the non 'socket-aware' C developper.                 *
+ ******************************************************************************/
+
+typedef enum{AUTHORIZATION,TRANSACTION,UPDATE}popstate;
+/* pop server states definition from RFC 1725*/
+
+typedef struct{
+	int sock;/* socket descriptor */
+	struct sockaddr_in* connection;
+	struct hostent* server;
+	popstate state;/* pop server state */
+	int* list;/* pop messages size list */
+	char** uidl;/* pop messages signature list */
+	int bytes;/* total stored (in bytes) on pop server */
+	int last;/* last message id */
+	int del;/* 0|1 flag to ask deletion of retrieved messages */
+}popsession;
+
+#define popbytes(s) ((s)->bytes)
+/* gives the total stored data size (in bytes) on the pop server */
+/* arg 's' is type 'popsession*'; 'result' is type 'int' */
+
+#define popnum(s) ((s)->last)
+/* gives the number of messages stored on the pop server before any operation */
+/* arg 's' is type 'popsession*'; 'result' is type 'int' */
+
+#define popsetdel(s) ((s)->del=1)
+/* asks the session to delete any retrieved messages on the server */
+/* arg 's' is type 'popsession*' */
+
+#define popsetundel(s) ((s)->del=0)
+/* asks the session to not delete any retrieved message on the server */
+/* arg 's' is type 'popsession*' */
+
+#define popmsgsize(s,i) ((s)->list[(i)])
+/* gives the size of message 'i' for session 's' */
+/* args are type 'session*'(s) and 'int'(i) */
+/* 'i' must *not* be 0 */
+
+#define popmsguid(s,i) ((s)->uidl[(i)])
+/* points to the 'char*' uid (unique signature) of 'int'(i) message id */
+
+char* popbegin(const char* servername,const char* user, const char* pass, popsession** sp);
+/* prepares, connect and get lists of messages stored on pop server */
+/* you must give a valid servername, user and pass */
+/* returns an error message if a problem occurs, else NULL */
+
+char* popgethead(popsession* session, int id);
+/* returns the header of a message (id from 1 to popnum()) or NULL if bad id */
+
+char* popgetmsg(popsession* session, int id);
+/* returns a message (id from 1 to popnum()) or NULL if bad id */
+
+int popdelmsg(popsession* session, int id);
+/* deletes message 'id' on pop server */
+/* returns -1 if server error, 0 else */
+
+int popcancel(popsession* session);
+/* cancels all previous deletion on pop server */
+/* returns -1 if server error, 0 else */
+
+void popend(popsession* session);
+/* quit and destroys pop session */
+
+#ifdef __cplusplus
+}
+#endif
+#endif

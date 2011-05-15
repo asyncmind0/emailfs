@@ -1,0 +1,47 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<!DOCTYPE KDevPrjSession>
+<KDevPrjSession>
+ <DocsAndViews NumberOfDocuments="9" >
+  <Doc0 NumberOfViews="1" URL="file:/root/Projects/emailfs-new/daemon/src/daemon.c" >
+   <View0 line="54" Type="Source" />
+  </Doc0>
+  <Doc1 NumberOfViews="1" URL="file:/root/Projects/emailfs-new/daemon/src/kern_sock.c" >
+   <View0 line="94" Type="Source" />
+  </Doc1>
+  <Doc2 NumberOfViews="1" URL="file:/root/Projects/emailfs-new/daemon/src/pop_ops.c.listing-working" >
+   <View0 line="156" Type="Source" />
+  </Doc2>
+  <Doc3 NumberOfViews="1" URL="file:/root/Projects/emailfs-new/emailfsdaemon/libspopc-0.5.9/libspopc.h" >
+   <View0 line="39" Type="Source" />
+  </Doc3>
+  <Doc4 NumberOfViews="1" URL="file:/root/Projects/emailfs-new/emailfsdaemon/libspopc-0.5.9/examples/butcher.c" >
+   <View0 line="14" Type="Source" />
+  </Doc4>
+  <Doc5 NumberOfViews="1" URL="file:/root/Projects/emailfs-new/daemon/src/pop_ops.h" >
+   <View0 line="19" Type="Source" />
+  </Doc5>
+  <Doc6 NumberOfViews="1" URL="file:/root/Projects/emailfs-new/daemon/src/pop_ops.c" >
+   <View0 line="79" Type="Source" />
+  </Doc6>
+  <Doc7 NumberOfViews="1" URL="file:/root/Projects/emailfs-new/emailfsdaemon/libspopc-0.5.9/examples/poptest1.c" >
+   <View0 line="42" Type="Source" />
+  </Doc7>
+  <Doc8 NumberOfViews="1" URL="file:/root/Projects/emailfs-new/emailfsdaemon/libspopc-0.5.9/session.c" >
+   <View0 line="0" Type="Source" />
+  </Doc8>
+ </DocsAndViews>
+ <pluginList>
+  <kdevdebugger>
+   <breakpointList/>
+  </kdevdebugger>
+  <kdevbookmarks>
+   <bookmarks/>
+  </kdevbookmarks>
+  <kdevvalgrind>
+   <executable path="" params="" />
+   <valgrind path="/usr/bin/valgrind" params="--tool=memcheck  --leak-check=yes" />
+   <calltree path="" params="" />
+   <kcachegrind path="" />
+  </kdevvalgrind>
+ </pluginList>
+</KDevPrjSession>
